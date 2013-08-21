@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quick Pic - 临时DEMO图像获取工具</title>
+    <script type="text/javascript" src="ZeroClipboard.js"></script>
+    <script type="text/javascript" src="jquery.js"></script>
+
+    <style type="text/css">
+        *{margin: 0; padding: 0;}
+        body{font: 12px/1.5em \5FAE\8F6F\96C5\9ED1, "Microsoft YaHei"; padding: 20px;}
+        h1{font-size: 16px; margin-bottom: 20px;}
+        .desc{ margin-bottom: 10px;}
+        .prev{  margin-bottom: 20px;}
+        .result{height: 30px; line-height: 30px; }
+        .result input{ float: left; padding: 5px 10px; margin-right: 10px; width: 500px; }
+        .btn{ float: left; width: 100px; margin-right: 5px; height: 30px; text-decoration: none; text-align: center; background: #369; color: #fff; font: 14px/30px arial; border-top-right-radius: 8px; border-bottom-left-radius: 8px;}
+        .prev img{display: block; margin-top: 10px;}
+        .btn_delete{display: none;}
+        .tip{ float: left; height: 30px; line-height: 30px; color: #666;}
+    </style>
+</head>
+<body onpaste="pasteHandle(event);" style="height:100vh;">
+<h1>Quick Pic - 临时DEMO图像获取工具（仅限Chrome，图片不定期手动清理）</h1>
+<p class="desc">请将临时DEMO图像粘贴到本页（尺寸请自己把握，不能自动计算）</p>
+<p class="desc"><strong>QQ截图：</strong>在放大镜中仔细对准边缘，微调尺寸并回车，粘贴到本页即可</p>
+<p class="desc"><strong>Photoshop截图：</strong>矩形选择工具选取准确区域，Ctrl+Shift+C 合并拷贝，粘贴到本页即可</p>
+<p class="desc"><strong>删除刚刚上传的图片：</strong>上传成功后，直接点击 DELETE 按钮即可删除刚刚上传的图片</p>
+<p class="desc"><strong>删除之前上传的图片：</strong>将本工具生成的图片地址粘贴到输入框中，点击 DELETE 按钮即可删除</p>
+<div class="prev">
+    <div class="result">
+        <input id="src" type="text" value="" placeholder="图片地址"/>
+        <a data-clipboard-target="src" class="btn" id="btn_copy" href="#" title="拷贝到剪贴板">COPY</a>
+        <a id="btn_delete" class="btn btn_delete" href="#" title="怕人看到就赶紧删咯~">DELETE</a>
+        <span class="tip"></span>
+    </div>
+    <img id="img" src="" alt="">
+</div>
+
+<script>
+    /**
+     * @desc 哎~查看源代码的毛病始终改不了有木有？代码没啥好看的了，解决需求才重要，系不系啊，亲？
+     * @author laserji
+     * @mail jiguang1984#gmail.com
+     * @date 2013-08-21
+     */
+
+    function pasteHandle(ev){
+        var clipboardData,items,item;
+
+        if(ev&&(clipboardData=ev.clipboardData)&&(items=clipboardData.items)&&(item=items[0])&&item.kind=='file'&&item.type.match(/^image\//i)){
+            var blob = item.getAsFile(),reader = new FileReader();
+
+            reader.onload=function(){
+
+                $.post('save.php', {
+                   data: event.target.result
+                }, function(data){
+                    $('#src').val(data);
+                    $('#img').attr('src',data);
+                    $('#btn_delete').attr('data-file', data.replace(/.*\//i,'')).show();
+                });
+            };
+
+            reader.readAsDataURL(blob);
+            return false;
+        }
+    }
+
+    function deleteFile(filename){
+        if(filename != ''){
+            $.post('delete.php', {
+                file: filename
+            }, function(data){
+                if(data == '1'){
+                    tip('删除成功！1秒后自动刷新', function(){
+                        location.reload();
+                    });
+                }else{
+                    tip('删除失败！请确认路径是否正确');
+                }
+            });
+        }
+    }
+
+    function tip(msg, callback){
+        $('.tip').html(msg).show().delay(1000).fadeOut(300, callback);
+    }
+
+    // 复制代码
+    var clip = new ZeroClipboard( document.getElementById("btn_copy"), {
+        moviePath: "http://ecd.ecc.com/laserji/qp/ZeroClipboard.swf"
+    } );
+
+    clip.on( 'complete', function(){
+        tip('复制成功！');
+    });
+
+    $('#btn_delete').click(function(e){
+        e.preventDefault();
+        deleteFile($(this).attr('data-file'));
+    });
+
+    $('#src').keyup(function(){
+        var src = $.trim($(this).val());
+
+        if(/.*\/\d{6}-\d{2,5}.png/i.test(src)){
+            $('#btn_delete').attr('data-file', src.replace(/.*\//i,'')).show();
+        }
+    });
+</script>
+</body>
+</html>
